@@ -18,7 +18,7 @@ var jobs = [];
 
 module.exports = function (grunt) {
 
-	grunt.loadNpmTasks('grunt-svg2png');
+	grunt.loadTasks(__dirname + '/../node_modules/grunt-svg2png/tasks');
 
 	grunt.registerTask('svg2png_colorfy_png', ['svg2png:svg2png_colorfy']);
 
