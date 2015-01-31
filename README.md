@@ -38,5 +38,4 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 * Test icons by [IcoMoon](https://icomoon.io) (CC BY 4.0 or GPL)
 
 ## License
-Copyright (c) 2015 Hein Bekker
-Licensed under the MIT license.
+Copyright (c) 2015 Hein Bekker. Licensed under the MIT license.
