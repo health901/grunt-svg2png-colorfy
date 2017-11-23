@@ -32,6 +32,7 @@ grunt.initConfig({
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
+* 0.1.3 Upgrade to Node 4.x for promises
 * 0.1.2 Fix peer dependency bug, refactor using promises
 * 0.1.1 Fix loading of grunt-svg2png tasks
 * 0.1.0 First release
