@@ -8,163 +8,179 @@
 
 'use strict';
 
-var path = require('path');
-var DirectoryColorfy = require('directory-colorfy');
-var async = require('asyncawait/async');
-var await = require('asyncawait/await');
 var _ = require('lodash');
+var DirectoryColorfy = require('directory-colorfy');
+var fs = require('fs-extra');
 var hash = require('object-hash');
-var jobs = [];
+var path = require('path');
+var Promise = require('grunt-promise').using('bluebird');
+var streamifier = require('streamifier');
+var svg2png = require('svg2png');
 
-module.exports = function (grunt) {
+Promise.promisifyAll(fs);
 
-	grunt.loadTasks(__dirname + '/../node_modules/grunt-svg2png/tasks');
+/**
+ *
+ * @param   {String} svgPath Soure file path
+ * @param   {String} pngDir Destination directory path
+ * @returns {Promise}
+ */
+function makePng(svgPath, pngDir) {
+  var extname = path.extname(svgPath);
+  var basename = path.basename(svgPath, extname);
+  var pngPath = path.join(pngDir, basename + '.png');
 
-	grunt.registerTask('svg2png_colorfy_png', ['svg2png:svg2png_colorfy']);
+  return fs
+    .readFileAsync(svgPath, 'utf-8')
+    .then(function(data) {
+      var buffer = new Buffer(data, 'utf-8');
 
-	grunt.registerTask('svg2png_colorfy_clean', 'Clean up after svg2png_colorfy', function () {
-		jobs.forEach(function (job) {
-			if (grunt.file.isDir(job.temp)) {
-				grunt.file.delete(job.temp);
-			}
-		});
-		jobs = [];
-	});
+      return svg2png(buffer);
+    })
+    .then(function(buffer) {
+      return new Promise(function(resolve) {
+        var writeStream = fs.createWriteStream(pngPath);
 
-	grunt.registerMultiTask('svg2png_colorfy', 'Grunt plugin to rasterize SVG to PNG images with different colors', function () {
-		// Merge task-specific and/or target-specific options with these defaults.
-		var options = this.options({
-			temp: 'tmp'
-		});
+        writeStream.on('close', function() {
+          resolve();
+        });
 
-		var colors = options.colors;
-		var colorNames = Object.keys(colors);
+        streamifier.createReadStream(buffer).pipe(writeStream);
+      });
+    });
+}
 
-		if (colorNames.length < 1) {
-			grunt.fatal('One or more colors are required');
-			return;
-		}
+module.exports = function(grunt) {
+  grunt.registerMultiPromise(
+    'svg2png_colorfy',
+    'Grunt plugin to rasterize SVG to PNG images with different colors',
+    function() {
+      // Merge task-specific and/or target-specific options with these defaults.
+      var options = this.options({
+        temp: 'tmp'
+      });
 
-		var colorSuffix = '.colors-' + colorNames.join('-');
-		var tempPath = path.resolve(options.temp);
+      var colors = options.colors;
+      var colorNames = Object.keys(colors);
+      var colorSuffix = '.colors-' + colorNames.join('-');
+      var tempPath = path.resolve(options.temp);
 
-		if (grunt.file.isPathCwd(tempPath)) {
-			grunt.verbose.error();
-			grunt.fatal('Cannot delete the current working directory.');
-			return false;
-		}
-		else if (grunt.file.isDir(tempPath) && !grunt.file.isPathInCwd(tempPath)) {
-			grunt.verbose.error();
-			grunt.fatal('Cannot delete files outside the current working directory.');
-			return false;
-		}
+      if (colorNames.length < 1) {
+        grunt.fail.fatal('One or more colors are required');
+      } else if (grunt.file.isPathCwd(tempPath)) {
+        grunt.fail.fatal('Cannot delete the current working directory.');
+      } else if (
+        grunt.file.isDir(tempPath) &&
+        !grunt.file.isPathInCwd(tempPath)
+      ) {
+        grunt.fail.fatal(
+          'Cannot delete files outside the current working directory.'
+        );
+      }
 
-		grunt.file.mkdir(tempPath);
+      var files = this.files.reduce(function(result, file) {
+        if (!file.src) {
+          grunt.fail.fatal('Src directory is required');
+        } else if (!file.dest) {
+          grunt.fail.fatal('Dest directory is required');
+        }
 
-		function copy (files) {
-			files.forEach(function (f) {
-				if (!f.src) {
-					grunt.fatal('Src directory is required');
-					return;
-				}
-				if (!f.dest) {
-					grunt.fatal('Dest directory is required');
-					return;
-				}
+        var cwd = file.cwd || '';
+        var dest = path.resolve(file.dest);
+        var jobId = hash.MD5(file);
+        var jobPath = path.join(tempPath, jobId);
 
-				var jobId = hash.MD5(f);
-				var jobPath = tempPath + '/' + jobId;
+        return result.concat(
+          grunt.file.expand({cwd: cwd}, file.src).map(function(file) {
+            var srcPath = path.resolve(cwd + file);
+            var tmp1Path = path.join(
+              jobPath,
+              'tmp1',
+              path.basename(srcPath).replace(/\.svg$/i, colorSuffix + '.svg')
+            );
+            var tmp2Path = path.join(jobPath, 'tmp2');
 
-				grunt.file.mkdir(jobPath);
+            return {
+              jobId: jobId,
+              src: srcPath,
+              dest: dest,
+              tmp1: tmp1Path,
+              tmp2: tmp2Path
+            };
+          })
+        );
+      }, []);
 
-				var cwd = '';
-				var options = {};
+      var destPaths = _.uniq(
+        files.map(function(file) {
+          return file.dest;
+        })
+      );
 
-				if (f.cwd) {
-					cwd = options.cwd = f.cwd;
-				}
+      var tmp2Paths = _.uniq(
+        files.map(function(file) {
+          return file.tmp2;
+        })
+      );
 
-				var files = grunt.file.expand(options, f.src);
+      var jobIds = _.uniq(
+        files.map(function(file) {
+          return file.jobId;
+        })
+      );
 
-				files.forEach(function (file) {
-					var srcPath = path.resolve(cwd + file);
-					var destPath = jobPath + '/' + path.basename(srcPath).replace(/\.svg$/i, colorSuffix + '.svg');
-					grunt.file.copy(srcPath, destPath);
-				});
+      return fs
+        .mkdirpAsync(tempPath)
+        .then(function() {
+          return Promise.mapSeries(destPaths, function(destPath) {
+            return fs.mkdirpAsync(destPath);
+          });
+        })
+        .then(function() {
+          return Promise.mapSeries(tmp2Paths, function(tmp2Path) {
+            return fs.mkdirpAsync(tmp2Path);
+          });
+        })
+        .then(function() {
+          return Promise.mapSeries(files, function(file) {
+            return fs.copyAsync(file.src, file.tmp1);
+          });
+        })
+        .then(function() {
+          return Promise.mapSeries(jobIds, function(jobId) {
+            var tmp1Path = path.join(tempPath, jobId, 'tmp1');
+            var tmp2Path = path.join(tempPath, jobId, 'tmp2');
 
-				jobs.push({
-					src: f.src,
-					dest: f.dest,
-					temp: jobPath,
-					dc: jobPath + '/dc'
-				});
-			});
+            var dc = new DirectoryColorfy(tmp1Path, tmp2Path, {
+              colors: colors
+            });
 
-			return jobs;
-		}
+            return dc.convert();
+          });
+        })
+        .then(function() {
+          return Promise.mapSeries(files, function(file) {
+            var extname = path.extname(file.src);
+            var basename = path.basename(file.src, extname);
+            var tmp2Path = path.join(tempPath, file.jobId, 'tmp2');
 
-		var copyAsync = async(function (files) {
-			return await(copy(files));
-		});
+            return Promise.mapSeries(colorNames, function(colorName) {
+              var svgPath = path.join(
+                tmp2Path,
+                basename + '-' + colorName + '.svg'
+              );
 
-		/**
-		 *
-		 * @param {string} srcPath
-		 * @param {string} destPath
-		 * @param {object} options
-		 * @returns {array}
-		 */
-		function colorfy (srcPath, destPath, options) {
-			grunt.file.mkdir(destPath);
-			var dc = new DirectoryColorfy(srcPath, destPath, options);
-			return dc.convert();
-		}
-
-		var colorfyAsync = async(function (srcPath, destPath, options) {
-			return await(colorfy(srcPath, destPath, options));
-		});
-
-		var colorfyJobsAsync = async(function (jobs) {
-			var promises = [];
-
-			jobs.forEach(function (set) {
-				promises.push(colorfyAsync(set.temp, set.dc, {
-					colors: colors
-				}));
-			});
-
-			return await(promises);
-		});
-
-		copyAsync(this.files)
-			.then(function (data) {
-				return colorfyJobsAsync(jobs);
-			})
-			.then(function (data) {
-				var config = grunt.config.get('svg2png');
-				if (!_.isPlainObject(config)) {
-					config = {};
-				}
-
-				config.svg2png_colorfy = {
-					files: []
-				};
-
-				jobs.forEach(function (job) {
-					config.svg2png_colorfy.files.push({
-						cwd: job.dc + '/',
-						src: '*.svg',
-						dest: job.dest
-					});
-				});
-
-				grunt.config.set('svg2png', config);
-
-				grunt.task.run(['svg2png_colorfy_png', 'svg2png_colorfy_clean']);
-			})
-			.catch(function (err) {
-				grunt.fatal(err);
-			});
-	});
-
+              return makePng(svgPath, file.dest);
+            });
+          });
+        })
+        .then(function() {
+          return fs.removeAsync(tempPath);
+        })
+        .then(function() {
+          return Promise.resolve('Done!');
+        })
+        .then(grunt.log.write);
+    }
+  );
 };

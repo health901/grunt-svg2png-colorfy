@@ -1,7 +1,7 @@
 {
   "name": "grunt-svg2png-colorfy",
   "description": "Grunt plugin to rasterize SVG to PNG images with different colors",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "homepage": "https://github.com/netbek/grunt-svg2png-colorfy",
   "author": {
     "name": "Hein Bekker",
@@ -21,6 +21,9 @@
       "url": "https://github.com/netbek/grunt-svg2png-colorfy/blob/master/LICENSE"
     }
   ],
+  "keywords": [
+    "gruntplugin"
+  ],
   "engines": {
     "node": ">= 0.8.0"
   },
@@ -28,24 +31,35 @@
     "test": "grunt test"
   },
   "devDependencies": {
-    "grunt": "~0.4.5",
-    "grunt-contrib-clean": "^0.6.0",
-    "grunt-contrib-jshint": "^0.11.0",
-    "grunt-contrib-nodeunit": "^0.4.1"
+    "babel-core": "^6.26.0",
+    "babel-eslint": "^8.0.2",
+    "eslint": "^4.11.0",
+    "eslint-config-prettier": "^2.8.0",
+    "eslint-plugin-babel": "^4.1.2",
+    "eslint-plugin-dollar-sign": "^1.0.1",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jsdoc": "^3.2.0",
+    "eslint-plugin-jsx-a11y": "^6.0.2",
+    "eslint-plugin-prettier": "^2.3.1",
+    "eslint-plugin-react": "^7.5.1",
+    "grunt-contrib-clean": "^1.1.0",
+    "grunt-contrib-jshint": "^1.1.0",
+    "grunt-contrib-nodeunit": "^1.0.0",
+    "prettier": "^1.8.2"
   },
   "peerDependencies": {
-    "grunt": "~0.4.5"
+    "grunt": ">=0.4.0"
   },
-  "keywords": [
-    "gruntplugin"
-  ],
   "dependencies": {
-    "asyncawait": "^0.7.4",
-    "directory-colorfy": "^0.5.1",
-    "grunt": "^0.4.5",
-    "grunt-contrib-clean": "^0.6.0",
-    "grunt-svg2png": "^0.2.5",
-    "lodash": "^3.0.1",
-    "object-hash": "^0.5.0"
+    "bluebird": "^3.5.1",
+    "directory-colorfy": "https://github.com/netbek/directory-colorfy.git#netbek-jsdom-9",
+    "fs-extra": "^4.0.2",
+    "grunt": "^1.0.1",
+    "grunt-contrib-clean": "^1.1.0",
+    "grunt-promise": "^1.1.2",
+    "lodash": "^4.17.4",
+    "object-hash": "^1.2.0",
+    "streamifier": "^0.1.1",
+    "svg2png": "3.0.1"
   }
 }

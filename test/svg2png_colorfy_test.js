@@ -8,14 +8,14 @@
 
 'use strict';
 
-var grunt = require('grunt');
-var fs = require('fs');
+var fs = require('fs-extra');
 
 exports.svg2png_colorfy = {
-	test1: function (test) {
-		fs.stat('test/files/dest/icon-0001-home-blue.png', function (err, stats) {
-			test.ok(err === null && stats.isFile(), 'PNG "icon-0001-home-blue.png" should exist');
-			test.done();
-		});
-	}
+  test1: function(test) {
+    test.ok(
+      fs.existsSync('test/files/dest/icon-0001-home-blue.png'),
+      'PNG "icon-0001-home-blue.png" should exist'
+    );
+    test.done();
+  }
 };
