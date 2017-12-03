@@ -1,4 +1,4 @@
-# grunt-svg2png-colorfy [![Build Status](https://secure.travis-ci.org/netbek/grunt-svg2png-colorfy.png?branch=master)](http://travis-ci.org/netbek/grunt-svg2png-colorfy)
+# grunt-svg2png-colorfy [![CircleCI](https://circleci.com/gh/netbek/grunt-svg2png-colorfy.svg?style=svg)](https://circleci.com/gh/netbek/grunt-svg2png-colorfy)
 
 Grunt plugin to rasterize SVG to PNG images with different colors
 
