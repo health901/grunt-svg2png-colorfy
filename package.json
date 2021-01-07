@@ -1,16 +1,12 @@
 {
-  "name": "grunt-svg2png-colorfy",
+  "name": "grunt-svg2png-colorfy-fix",
   "description": "Grunt plugin to rasterize SVG to PNG images with different colors",
   "version": "0.1.3",
-  "homepage": "https://github.com/netbek/grunt-svg2png-colorfy",
+  "homepage": "https://github.com/health901/grunt-svg2png-colorfy",
   "author": {
     "name": "Hein Bekker",
     "email": "hein@netbek.co.za",
     "url": "http://netbek.co.za"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/netbek/grunt-svg2png-colorfy.git"
   },
   "bugs": {
     "url": "https://github.com/netbek/grunt-svg2png-colorfy/issues"
